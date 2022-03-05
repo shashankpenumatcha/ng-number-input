@@ -42,10 +42,13 @@ npm i ng-number-input --save
     example:
 
     ```
-    format(text:string, value:number): string{
-        return '$'+text
+    format(text:string, value:number){
+        if(value>10000000){
+        return 'Please a enter value less than 10000000'
+        }
+        return text
     }
-
+ 
     <ng-number-input
     [limitTo]="2"
     [(ngModel)]="test"
@@ -77,9 +80,13 @@ npm i ng-number-input --save
 
 - **\[locale\]** 
     ```
-    @Input() locale = 'en-US';
+    @Input() locale = ['en-US', {maximumFractionDigits:3}];
     ```
-    Locale used to format the number. This adds commas to numbers. eg. 100,000,000.
+    Locale used to format the number. 
+    
+    It is an array and the first element is a string and the second one is an optional options object.
+
+    Refer to [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString) for details on how to use them.
 
 - **\[name\]** 
     ```
