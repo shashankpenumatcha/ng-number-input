@@ -116,3 +116,6 @@ npm i ng-number-input --save
     @Input() parseInt = false;
     ```
     It is a boolean type input. If set to true decimals will be restricted. 
+
+## Source Code
+You can clone the source code from this [GitHub repository](https://github.com/shashankpenumatcha/ng-number-input).

@@ -15,8 +15,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   ]
 })
 export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
-  @Input() max = 9007199254740992;
-  @Input() min = -9007199254740992;
+  @Input() max =  99999999999999;
+  @Input() min = -99999999999999;
   @Input() locale = 'en-US';
   @Input()name!: string;
   @Input() placeholder = '';
@@ -35,11 +35,17 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
   set value(v: any) {
       if (v !== this.innerValue) {
         let text = v?.toString();
-        if(this.limitTo && text?.includes('.')){
-          v = Number([text.split('.')[0],text.split('.')[1].substring(0,this.limitTo)].join('.'))
+        if(text?.includes('.')){
+          let left = text?.split('.')[0].substring(0,14);
+          let diff  =  14 - left.length;
+          if(diff>this.limitTo){
+            diff = this.limitTo
+          }
+          v = Number([left,text?.split('.')[1].substring(0,diff)].join('.'))
+        }else{
+          v = Number(text?.split('.')[0].substring(0,14))
         }
         this.innerValue = v;
-          
       }
   }
    
@@ -52,8 +58,10 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
       pos = this.target.selectionStart
     }
     if (t !== this.text) {
-        diff = t?.split(',').length - this.text?.split(',').length
-        this.text = t;
+        diff = t?.split(',').length - this.text?.split(',').length;
+        setTimeout(()=>{
+          this.text = t;
+        })
         if(diff<0 || diff>0){
           pos+=diff
         }
@@ -72,11 +80,11 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
     this.target =  event.target;
   }
   ngOnInit(): void {
-    if(this.min && this.min <-9007199254740992){
-      this.min = -9007199254740992
+    if(this.min && this.min <-99999999999999){
+      this.min = -99999999999999
     }
-    if(this.max && this.max > 9007199254740992){
-      this.max = 9007199254740992
+    if(this.max && this.max > 99999999999999){
+      this.max = 99999999999999
     }
     if(!this.limitTo || this.limitTo>3 || this.limitTo <0){
       this.limitTo = 3;
@@ -140,56 +148,58 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
     return number;
   }
   processInput(value: string) {
-  
+    
     if (!value) {
       this.value = null;
       this.onChange(null);
-      setTimeout(() => {
        let temp = '';
         if(this.format){
         temp = this.format(temp, this.value)
         }
         this.setText(temp)
-      });
       return;
     }
+   
     const text = this.sanitize(value);
     let number = Number(text);
+    
     if (text && (number || number === 0)) {
       if (this.parseInt) {
         // eslint-disable-next-line radix
         number = parseInt(text);
       }
       this.value = this.checkBoundaries(number);
-      setTimeout(() => {
-        let temp =  this.value.toLocaleString(this.locale);
-        
-        //  Number('2.') results in 2
-        // Doing below to preserve the .        
-        if (text.indexOf('.') === text.length - 1) {
-          temp += '.';
-        }
-        if(text.includes('.')){
-          temp = [
-            temp.split('.')[0], 
-            text.split('.')[1].substring(0,this.limitTo)
-          ].join('.');
-        }
-        if(this.format){
-          temp = this.format(temp, this.value)
-        }
-        this.setText(temp)
-      });
+      let temp =  this.value.toLocaleString(this.locale);
+      //  Number('2.') results in 2
+      // Doing below to preserve the .        
+      if (text.indexOf('.') === text.length - 1) {
+        temp += '.';
+      }
+      if(text.includes('.')){
+
+        let left = number.toString().split('.')[0].substring(0,14);
+          let diff  =  14 - left.length;
+          if(diff>this.limitTo){
+            diff = this.limitTo
+          }
+        temp = [
+          temp.split('.')[0], 
+          text.split('.')[1].substring(0,diff)
+        ].join('.');
+      }
+      if(this.format){
+        temp = this.format(temp, this.value)
+      }
+      
+      this.setText(temp)
       this.onChange(this.value);
       return;
     }
-    setTimeout(() => {
       let temp = text;
       if(this.format){
         temp = this.format(temp,this.value)
       }
       this.setText(temp)
-    });
     this.value = null;
     this.onChange(this.value);
   }
