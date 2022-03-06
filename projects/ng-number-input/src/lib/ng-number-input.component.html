@@ -2,8 +2,8 @@
 
 
 <ng-container *ngIf="!live">
-    <input #numberInput autofocus *ngIf="!blur" (focus)="blur=false" (focusout)="blur=true" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="test" (ngModelChange)="processInput(test)" (blur)="onTouch($event)">
-    <input #stringInput autofocus *ngIf="blur" (click)="$event.preventDefault;blur = false" (focus)="blur=false" (focusout)="blur=false"   [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [value]="text" (blur)="onTouch($event)">
+    <input #numberInput  *ngIf="!blur" (focus)="blur=false" (focusout)="blur=true" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="test" (ngModelChange)="processInput(test)" (blur)="onTouch($event)">
+    <input #stringInput  *ngIf="blur" (click)="$event.preventDefault;blur = false" (focus)="blur=false" (focusout)="blur=false"   [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [value]="text" (blur)="onTouch($event)">
 
 </ng-container>
 

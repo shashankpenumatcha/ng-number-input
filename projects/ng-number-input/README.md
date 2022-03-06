@@ -35,11 +35,12 @@ npm i ng-number-input --save
     ```
     @Input() live = true;
     ```
-    When this is set to true: 
-    - The text is formatted as then user types.    
+    When this is set to true:
+    - The text is formatted as the user types.    
 
     When this is set to false:
-    - Unformatted text is displayed when user is using the input and fomatted text is shown when user stops interacting.
+    - Unformatted text is displayed when user is using the input.
+    - Formatted text is shown when user stops interacting.
     - cannot use \[useString\] in this mode.
 
 
@@ -66,13 +67,13 @@ npm i ng-number-input --save
 
 - **\[max\]** 
     ```
-    @Input() max = 9007199254740992;
+    @Input() max: number;
     ```
     maximum value the input can hold.
 
 - **\[min\]** 
     ```
-    @Input() min = -9007199254740992;
+    @Input() min:number;
     ```
     minimum value the input can hold.
 
@@ -97,7 +98,7 @@ npm i ng-number-input --save
     example:
 
     ```
-    format(text:string, value:number){
+    format(text:string): string{
         return '$' + text
     }
  
@@ -141,9 +142,10 @@ npm i ng-number-input --save
     ```
 - **\[parseInt\]** 
     ```
-    @Input() parseInt = false;
+    @Input() parseInt:boolean = false;
     ```
     It is a boolean type input. If set to true decimals will be restricted. 
+
 
 ## Source Code
 You can clone the source code from this [GitHub repository](https://github.com/shashankpenumatcha/ng-number-input).
