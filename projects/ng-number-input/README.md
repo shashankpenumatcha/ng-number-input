@@ -31,6 +31,33 @@ npm i ng-number-input --save
 
 ### Inputs
 
+- **\[live\]** 
+    ```
+    @Input() live = true;
+    ```
+    When this is set to true: 
+    - The text is formatted as then user types.
+    - Only 'en-US', and 'en-IN' like locales are supported.
+    
+
+    When this is set to false:
+    - Unformatted text is displayed when user is using the input and fomatted text is shown when user stops interacting.
+    - All valid JS locales can be used in this mode.
+    - cannot use \[useString\] in this mode.
+
+
+- **\[locale\]** 
+    ```
+    @Input() locale = ['en-US', {maximumFractionDigits:3}];
+    ```
+    Locale used to format the number. 
+    
+    It is an array and the first element is a string and the second one is an optional options object.
+
+    Refer to [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString) for details on how to use them.
+
+    In \[live\] mode Only 'en-US', and 'en-IN' like locales are supported. Please set \[live\] to falls to use all the locales.
+
 - **\[limitTo\]** 
     ```
     @Input() limitTo = 3;
@@ -50,16 +77,6 @@ npm i ng-number-input --save
     @Input() min = -9007199254740992;
     ```
     minimum value the input can hold.
-
-- **\[locale\]** 
-    ```
-    @Input() locale = ['en-US', {maximumFractionDigits:3}];
-    ```
-    Locale used to format the number. 
-    
-    It is an array and the first element is a string and the second one is an optional options object.
-
-    Refer to [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString) for details on how to use them.
 
 
 - **\[useString\]** 

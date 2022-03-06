@@ -1,5 +1,5 @@
 import { isGeneratedFile } from '@angular/compiler/src/aot/util';
-import { Component, EventEmitter, forwardRef, Input, IterableDiffers, OnChanges, OnInit, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, forwardRef, Input, IterableDiffers, OnChanges, OnInit, Output, QueryList, SimpleChanges, ViewChild, ViewChildren, ViewEncapsulation } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
@@ -13,7 +13,10 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     }
   ]
 })
-export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
+export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  AfterViewInit {
+  @ViewChildren("numberInput") numberInput: QueryList<ElementRef>;
+
+  test:any
   @Input() max;
   @Input() min;
   @Input() locale:any = ['en-US'];
@@ -24,12 +27,14 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
   @Input() limitTo;
   @Input() format!:any;
   @Input() useString = false;
+  @Input() live= true;
   regex = /[^\d.\-]/g;
   disabled!: boolean;
   innerValue!:any;
   innerText!:any;
   target: any;
   text!:any;
+  blur = false;
   get value(): any {
     if(this.useString){
       return this.innerValue
@@ -42,22 +47,24 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
         if(this.useString){
           v = text?.split(',').join('')
         }else{
-          if(text?.includes('.')){
-            let left = text?.split('.')[0].substring(0,14);
-            let diff  =  14 - left.length;
-            if(diff>this.limitTo){
-              diff = this.limitTo
-            }
-            v = Number([left,text?.split('.')[1].substring(0,diff)].join('.'))
-          }else{
-            v = Number(text?.split('.')[0].substring(0,14))
-          }
+          v = this.limiter(text)
         }
         this.innerValue = v;
+        
       }
   }
    
   constructor() {}
+
+
+  ngAfterViewInit(): void {
+    this.numberInput.changes.subscribe((c)=>{
+      setTimeout(()=>{
+        this.numberInput.first.nativeElement.focus()
+      })
+    })
+  
+  }
 
   setText(t:any){
     let pos;
@@ -81,6 +88,20 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
     }
   }
 
+  limiter(text:string):number{
+    let v;
+    if(text?.includes('.')){
+      let left = text?.split('.')[0].substring(0,14);
+      let diff  =  14 - left.length;
+      if(diff>this.limitTo){
+        diff = this.limitTo
+      }
+      v = Number([left,text?.split('.')[1].substring(0,diff)].join('.'))
+    }else{
+      v = Number(text?.split('.')[0].substring(0,14))
+    }
+    return v
+  }
   onKeyDown(event){
     if(this.target){
       return
@@ -88,6 +109,11 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
     this.target =  event.target;
   }
   ngOnInit(): void {
+
+    if(!this.live){
+      this.useString  = false;
+    }
+    
     if(!this.useString){
       //allow users to pass limitTo if locale[1] is not provided
       if(!this.limitTo || this.limitTo>3 || this.limitTo <0){
@@ -182,10 +208,25 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
         }
       }
       return this.useString ? originalNumber : number
-    
-    
-    
   }
+
+  processStatic(text:string){
+    let number;
+    if(text?.includes('.')){
+      let left = text?.split('.')[0].substring(0,14);
+      let diff  =  14 - left.length;
+      if(diff>this.limitTo){
+        diff = this.limitTo
+      }
+      number = Number([left,text?.split('.')[1].substring(0,diff)].join('.'))
+    }else{
+      number = Number(text?.split('.')[0].substring(0,14))
+    }
+    this.value = number;
+    this.setText(number.toLocaleString(this.locale[0],this.locale[1]));
+    this.onChange(this.value)
+  }
+
   processInput(value: string) {
     if (!value) {
       this.value = null;
@@ -195,12 +236,19 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
         temp = this.format(temp)
         }
         this.setText(temp)
+        if(!this.live){
+          setTimeout(() => {   
+              this.test = null
+            });
+        }
       return;
     }
    
     let text = this.sanitize(value);
+
     if(!this.useString){
-      let number = Number(text);
+      let number = this.limiter(text);
+      console.log(number)
       if (text && (number || number === 0)) {
         if (this.parseInt) {
           // eslint-disable-next-line radix
@@ -216,9 +264,17 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
         if(this.format){
           temp = this.format(temp)
         }
-        
         this.setText(temp)
         this.onChange(this.value);
+
+        if(!this.live){
+          setTimeout(() => {   
+              this.test = this.value.toString()
+              if (text.indexOf('.') === text.length - 1) {
+                this.test += '.';
+              }
+            });
+        }
         return;
       }
     }else{
@@ -246,5 +302,10 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
     this.setText(text)
     this.value = null;
     this.onChange(this.value);
+    if(!this.live){
+      setTimeout(() => {   
+          this.test = null
+        });
+    }
   }
 }
