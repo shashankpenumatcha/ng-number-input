@@ -24,6 +24,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
   @Input() limitTo;
   @Input() format!:any;
   @Input() useString = false;
+  regex = /[^\d.\-]/g;
   disabled!: boolean;
   innerValue!:any;
   innerText!:any;
@@ -65,7 +66,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
       pos = this.target.selectionStart
     }
     if (t !== this.text) {
-        diff = t?.split(',').length - this.text?.split(',').length;
+        diff = t?.split(this.regex).length - this.text?.split(this.regex).length;
         setTimeout(()=>{
           this.text = t;
         })
@@ -152,7 +153,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
     return text;
   }
   sanitize(value: string) {
-    let text: any = `${value}`.replace(/[^\d.\-]/g, '');
+    let text: any = `${value}`.replace(this.regex, '');
     text = this.processDecimals(text);
     return this.processNegatives(text);
   }
@@ -191,7 +192,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
       this.onChange(null);
        let temp = '';
         if(this.format){
-        temp = this.format(temp, this.value)
+        temp = this.format(temp)
         }
         this.setText(temp)
       return;
@@ -213,7 +214,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
           temp += '.';
         }
         if(this.format){
-          temp = this.format(temp, this.value)
+          temp = this.format(temp)
         }
         
         this.setText(temp)
@@ -233,14 +234,14 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit {
       text= this.checkBoundaries(text);
       this.value = text
       if(this.format){
-        text = this.format(text,this.value)
+        text = this.format(text)
       }
       this.setText(text)
       this.onChange(this.value);
       return
     }
     if(this.format){
-      text = this.format(text,this.value)
+      text = this.format(text)
     }
     this.setText(text)
     this.value = null;

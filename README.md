@@ -78,16 +78,13 @@ npm i ng-number-input --save
     ```
     Use this function to format the displaying text value.
 
-    You can pass a function which takes text and value as arguments.
+    You can pass a function which takes text as arguments.
 
     example:
 
     ```
     format(text:string, value:number){
-        if(value>10000000){
-        return 'Please a enter value less than 10000000'
-        }
-        return text
+        return '$' + text
     }
  
     <ng-number-input
