@@ -31,33 +31,6 @@ npm i ng-number-input --save
 
 ### Inputs
 
-- **\[format\]** 
-    ```
-    @Input() format;
-    ```
-    Use this function to format the displaying text value.
-
-    You can pass a function which takes text and value as arguments.
-
-    example:
-
-    ```
-    format(text:string, value:number){
-        if(value>10000000){
-        return 'Please a enter value less than 10000000'
-        }
-        return text
-    }
- 
-    <ng-number-input
-    [limitTo]="2"
-    [(ngModel)]="test"
-    [format]="format"
-    required>
-    </ng-number-input>
-    ```
-
-
 - **\[limitTo\]** 
     ```
     @Input() limitTo = 3;
@@ -87,6 +60,43 @@ npm i ng-number-input --save
     It is an array and the first element is a string and the second one is an optional options object.
 
     Refer to [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString) for details on how to use them.
+
+
+- **\[useString\]** 
+    ```
+    @Input() useString:boolean = false;
+    ```
+    If this value is set to true. The input will return string and Locale formatting is ignored.
+
+    Formatting is done on string to add thousand seperators.
+
+    Use the [format] function and [limitTo] to further format the text. 
+
+- **\[format\]** 
+    ```
+    @Input() format;
+    ```
+    Use this function to format the displaying text value.
+
+    You can pass a function which takes text and value as arguments.
+
+    example:
+
+    ```
+    format(text:string, value:number){
+        if(value>10000000){
+        return 'Please a enter value less than 10000000'
+        }
+        return text
+    }
+ 
+    <ng-number-input
+    [limitTo]="2"
+    [(ngModel)]="test"
+    [format]="format"
+    required>
+    </ng-number-input>
+    ```
 
 - **\[name\]** 
     ```

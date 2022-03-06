@@ -1,4 +1,1 @@
-<!-- <input [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="text"  (ngModelChange)="format(text)">
- -->
-
- <input (keydown)="onKeyDown($event)" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="text" (ngModelChange)="processInput(text)" (blur)="onTouch($event)">
+<input (keydown)="onKeyDown($event)" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="text" (ngModelChange)="processInput(text)" (blur)="onTouch($event)">
