@@ -68,7 +68,7 @@ npm i ng-number-input --save
     ```
     If this value is set to true. The input will return string and Locale formatting is ignored.
 
-    Formatting is done on string to add thousand seperators.
+    Formatting is done on string to add thousands seperators.
 
     Use the [format] function and [limitTo] to further format the text. 
 
