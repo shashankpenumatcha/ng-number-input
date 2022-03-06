@@ -28,6 +28,8 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
   @Input() format!:any;
   @Input() useString = false;
   @Input() live= true;
+  fractionSeperator='.';
+  thousandsSeperator=',';
   regex = /[^\d.\-]/g;
   disabled!: boolean;
   innerValue!:any;
@@ -53,6 +55,26 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
         
       }
   }
+  onChange(event):any{};
+  onTouch(event):any{};
+  writeValue(value: any): void {
+    if(value && value!=this.innerValue){
+      if(this.useString){
+        this.processInput(value)
+        return
+      }
+      this.processInput(value.toLocaleString(this.locale[0],this.locale[1]));
+    }
+  }
+  registerOnChange(fn: any): void {
+    this.onChange = fn;
+  }
+  registerOnTouched(fn: any): void {
+    this.onTouch = fn;
+  }
+  setDisabledState?(isDisabled: boolean): void {
+    this.disabled = isDisabled;
+  }
    
   constructor() {}
 
@@ -60,12 +82,53 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
   ngAfterViewInit(): void {
     this.numberInput.changes.subscribe((c)=>{
       setTimeout(()=>{
-        this.numberInput.first.nativeElement.focus()
+        this.numberInput?.first?.nativeElement?.focus()
       })
     })
   
   }
 
+  ngOnInit(): void {
+    if(!this.live){
+      this.useString  = false;
+    }
+    this.initLocaleAndLimit();
+    if(!this.useString){
+      this.calculateSeperators();
+    }
+  }
+
+  calculateSeperators(){
+      let formattedText:any = new Intl.NumberFormat(this.locale[0]).format(1234567.89);
+      formattedText = formattedText.replace(/[\d]/g,'');
+      this.regex = new RegExp(`[^\\d${formattedText[2]}\\-]`,'g')
+      this.thousandsSeperator = formattedText[0];
+      this.fractionSeperator = formattedText[2]
+  }
+
+  initLocaleAndLimit(){
+    if(!this.useString){
+        //allow users to pass limitTo if locale[1] is not provided
+        if(!this.limitTo || this.limitTo>3 || this.limitTo <0){
+          this.limitTo = 3;
+        }
+        if(!this.locale[1]){
+          this.locale[1]={maximumFractionDigits:this.limitTo};
+        }
+        if(!this.locale[1].maximumFractionDigits){
+            this.locale[1].maximumFractionDigits = this.limitTo;
+        }
+        if(this.locale[1].maximumFractionDigits>3){
+          this.locale[1].maximumFractionDigits = 3
+        }
+        this.limitTo =  this.locale[1].maximumFractionDigits;
+    }else{
+      if(!this.limitTo && this.limitTo!==0){
+        this.limitTo = Number.POSITIVE_INFINITY;
+      }
+    
+    }
+  }
   setText(t:any){
     let pos;
     let diff = 0;
@@ -90,81 +153,35 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
 
   limiter(text:string):number{
     let v;
-    if(text?.includes('.')){
-      let left = text?.split('.')[0].substring(0,14);
+    if(text?.includes(this.fractionSeperator)){
+      let left = text?.split(this.fractionSeperator)[0].substring(0,14);
       let diff  =  14 - left.length;
       if(diff>this.limitTo){
         diff = this.limitTo
       }
-      v = Number([left,text?.split('.')[1].substring(0,diff)].join('.'))
+      v = Number([left,text?.split(this.fractionSeperator)[1].substring(0,diff)].join('.'))
     }else{
-      v = Number(text?.split('.')[0].substring(0,14))
+      v = Number(text?.split(this.fractionSeperator)[0].substring(0,14))
     }
+    
     return v
   }
+
   onKeyDown(event){
     if(this.target){
       return
     }
     this.target =  event.target;
   }
-  ngOnInit(): void {
 
-    if(!this.live){
-      this.useString  = false;
-    }
-    
-    if(!this.useString){
-      //allow users to pass limitTo if locale[1] is not provided
-      if(!this.limitTo || this.limitTo>3 || this.limitTo <0){
-        this.limitTo = 3;
-      }
-      if(!this.locale[1]){
-        this.locale[1]={maximumFractionDigits:this.limitTo};
-      }
-      if(!this.locale[1].maximumFractionDigits){
-          this.locale[1].maximumFractionDigits = this.limitTo;
-      }
-      if(this.locale[1].maximumFractionDigits>3){
-        this.locale[1].maximumFractionDigits = 3
-      }
-      this.limitTo =  this.locale[1].maximumFractionDigits;
-    }else{
-      if(!this.limitTo && this.limitTo!==0){
-        this.limitTo = Number.POSITIVE_INFINITY;
-      }
-    
-    }
-
-  }
-  onChange(event):any{};
-  onTouch(event):any{};
-  writeValue(value: any): void {
-    if(value && value!=this.innerValue){
-      if(this.useString){
-        this.processInput(value)
-        return
-      }
-      this.processInput(value.toLocaleString(this.locale[0],this.locale[1]));
-    }
-  }
-  registerOnChange(fn: any): void {
-    this.onChange = fn;
-  }
-  registerOnTouched(fn: any): void {
-    this.onTouch = fn;
-  }
-  setDisabledState?(isDisabled: boolean): void {
-    this.disabled = isDisabled;
-  }
   processDecimals(text: string) {
-    const hasPeriod = text.includes('.');
-    const arr: any = text.split('.');
+    const hasPeriod = text.includes(this.fractionSeperator);
+    const arr: any = text.split(this.fractionSeperator);
     let value = '';
     arr.map((m:any, i:number) => {
       value += m;
       if (i === 0 && hasPeriod) {
-        value += '.';
+        value += this.fractionSeperator;
       }
     });
     return value;
@@ -210,24 +227,9 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
       return this.useString ? originalNumber : number
   }
 
-  processStatic(text:string){
-    let number;
-    if(text?.includes('.')){
-      let left = text?.split('.')[0].substring(0,14);
-      let diff  =  14 - left.length;
-      if(diff>this.limitTo){
-        diff = this.limitTo
-      }
-      number = Number([left,text?.split('.')[1].substring(0,diff)].join('.'))
-    }else{
-      number = Number(text?.split('.')[0].substring(0,14))
-    }
-    this.value = number;
-    this.setText(number.toLocaleString(this.locale[0],this.locale[1]));
-    this.onChange(this.value)
-  }
 
   processInput(value: string) {
+    console.log(value)
     if (!value) {
       this.value = null;
       this.onChange(null);
@@ -245,10 +247,9 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
     }
    
     let text = this.sanitize(value);
-
+   
     if(!this.useString){
       let number = this.limiter(text);
-      console.log(number)
       if (text && (number || number === 0)) {
         if (this.parseInt) {
           // eslint-disable-next-line radix
@@ -258,8 +259,8 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
         let temp =  this.value.toLocaleString(this.locale[0],this.locale[1]);
         //  Number('2.') results in 2
         // Doing below to preserve the .        
-        if (text.indexOf('.') === text.length - 1) {
-          temp += '.';
+        if (text.indexOf(this.fractionSeperator) === text.length - 1) {
+          temp += this.fractionSeperator;
         }
         if(this.format){
           temp = this.format(temp)
@@ -270,8 +271,8 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
         if(!this.live){
           setTimeout(() => {   
               this.test = this.value.toString()
-              if (text.indexOf('.') === text.length - 1) {
-                this.test += '.';
+              if (text.indexOf(this.fractionSeperator) === text.length - 1) {
+                this.test += this.fractionSeperator;
               }
             });
         }
@@ -279,13 +280,13 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
       }
     }else{
       if(this.parseInt){
-        text = text?.split('.')[0]
+        text = text?.split(this.fractionSeperator)[0]
       }
       text = text.replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
       
-      let right = text.split('.')[1];
+      let right = text.split(this.fractionSeperator)[1];
       if(right?.length){
-        text = [text.split('.')[0],right?.substring(0,this.limitTo)].join('.')
+        text = [text.split(this.fractionSeperator)[0],right?.substring(0,this.limitTo)].join(this.fractionSeperator)
       }
       text= this.checkBoundaries(text);
       this.value = text
@@ -304,8 +305,8 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
     this.onChange(this.value);
     if(!this.live){
       setTimeout(() => {   
-          this.test = null
-        });
+        this.test = text
+      });
     }
   }
 }

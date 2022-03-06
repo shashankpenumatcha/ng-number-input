@@ -36,13 +36,10 @@ npm i ng-number-input --save
     @Input() live = true;
     ```
     When this is set to true: 
-    - The text is formatted as then user types.
-    - Only 'en-US', and 'en-IN' like locales are supported.
-    
+    - The text is formatted as then user types.    
 
     When this is set to false:
     - Unformatted text is displayed when user is using the input and fomatted text is shown when user stops interacting.
-    - All valid JS locales can be used in this mode.
     - cannot use \[useString\] in this mode.
 
 
@@ -56,7 +53,8 @@ npm i ng-number-input --save
 
     Refer to [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toLocaleString) for details on how to use them.
 
-    In \[live\] mode Only 'en-US', and 'en-IN' like locales are supported. Please set \[live\] to falls to use all the locales.
+    If \[useString\] is set to true locale wont work.
+
 
 - **\[limitTo\]** 
     ```
@@ -77,7 +75,6 @@ npm i ng-number-input --save
     @Input() min = -9007199254740992;
     ```
     minimum value the input can hold.
-
 
 - **\[useString\]** 
     ```
