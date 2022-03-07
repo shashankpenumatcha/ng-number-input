@@ -85,10 +85,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
 
   ngAfterViewInit(): void {
     this.subscription.add(this.numberInput.changes.subscribe((c)=>{
-      //setTimeout(()=>{
         this.numberInput?.first?.nativeElement?.focus()
-        this.cdr.detectChanges()
-      //})
     }))
   
   }
@@ -101,6 +98,13 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
     if(!this.useString){
       this.calculateSeperators();
     }
+  }
+
+  setLocaleOptions(option, value){
+    if(!this.locale[1]){
+      this.locale[1]={};
+    }
+    this.locale[1][option] = value;
   }
 
   calculateSeperators(){
@@ -118,12 +122,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
         if(!this.limitTo || this.limitTo>3 || this.limitTo <0){
           this.limitTo = 3;
         }
-        if(!this.locale[1]){
-          this.locale[1]={maximumFractionDigits:this.limitTo};
-        }
-        if(!this.locale[1].maximumFractionDigits){
-            this.locale[1].maximumFractionDigits = this.limitTo;
-        }
+        this.setLocaleOptions('maximumFractionDigits', this.limitTo)
         if(this.locale[1].maximumFractionDigits>3){
           this.locale[1].maximumFractionDigits = 3
         }
@@ -257,27 +256,24 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
           number = parseInt(text);
         }
         this.value = this.checkBoundaries(number);
-        let temp =  this.value.toLocaleString(this.locale[0],this.locale[1]);
-        //  Number('2.') results in 2
-        // Doing below to preserve the .        
-        if (text.indexOf(this.fractionSeperator) === text.length - 1) {
-          temp += this.fractionSeperator;
+        let localeOptions = this.locale[1]
+        if(text.includes(this.fractionSeperator)){
+          localeOptions = localeOptions ? {...localeOptions, minimumFractionDigits:1} : { minimumFractionDigits:1}
         }
+        let temp =  this.value.toLocaleString(this.locale[0],localeOptions);
         if(this.format){
           temp = this.format(temp)
         }
         this.setText(temp)
         this.onChange(this.value);
 
-        if(!this.live){
-         // setTimeout(() => {   
-              let temp = this.value.toString()
-              if (text.indexOf(this.fractionSeperator) === text.length - 1) {
-                temp += this.fractionSeperator;
-              }
-              console.log(temp)
-              this.test = new String(temp);
-           // });
+        if(!this.live && value?.includes(this.fractionSeperator)){
+          let right = value.split(this.fractionSeperator)[1];
+          if(right?.length>this.limitTo){
+            right = right?.substring(0,this.limitTo)
+          }
+          value = [value.split(this.fractionSeperator)[0],right].join(this.fractionSeperator)
+          this.test = new String(value)          
         }
         return;
       }
