@@ -1,4 +1,4 @@
-<input *ngIf="live" (keydown)="onKeyDown($event)" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="text" (ngModelChange)="processInput(text)" (blur)="onTouch($event)">
+<input *ngIf="live" (keydown)="onKeyDown($event)" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="text"  (blur)="onTouch($event)">
 
 
 <ng-container *ngIf="!live">
@@ -6,4 +6,5 @@
     <input #stringInput  *ngIf="blur" (click)="$event.preventDefault;blur = false" (focus)="blur=false" (focusout)="blur=false"   [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [value]="text" (blur)="onTouch($event)">
 
 </ng-container>
+
 
