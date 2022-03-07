@@ -240,28 +240,25 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
     let useStringText;
     let value = this.value;
     if(this.useString){
-      useStringText = number?.split(',').join('');
-      value = Number(value?.split(',').join(''))
+      useStringText = number;
+      value = Number(value)
       number =Number(useStringText)
     }
       if ((this.max || this.max === 0) && number > this.max) {
         number = this.max;
-        if (value < this.max) {
+        if (value <= this.max) {
           number = value;
           useStringText = this.text_?.split(',')?.join('')?.replace(/[^\d.\-]/g,'')
-        }else{
-          useStringText = number.toString();
         }
       }
       if ((this.min || this.min === 0) && number < this.min) {
         number = this.min;
-        if (value > this.min) {
+        if (value >= this.min) {
           number = value;
           useStringText = this.text_?.split(',')?.join('')?.replace(/[^\d.\-]/g,'')
-        }else{
-          useStringText = number.toString();
         }
       }
+      console.log(useStringText)
       return this.useString ? useStringText : number
   }
 
@@ -326,11 +323,12 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit,  Af
         });
       }
     }else{
+      console.log(text)
       if(this.parseInt){
         text = text?.split(this.fractionSeperator)[0]
       }
-      text = text.replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
       text= this.checkBoundaries(text);
+      text = text.replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
       let fraction = text.split(this.fractionSeperator)[1];
       if(fraction?.length){
         let limit = this.limitTo;
