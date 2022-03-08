@@ -1,4 +1,4 @@
-<input *ngIf="live" (keydown)="onKeyDown($event)" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="text"  (blur)="onTouch($event)">
+<input  *ngIf="live" (paste)="onKeyDown($event)" (keydown)="onKeyDown($event)" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="text"  (blur)="onTouch($event)">
 
 
 <ng-container *ngIf="!live">

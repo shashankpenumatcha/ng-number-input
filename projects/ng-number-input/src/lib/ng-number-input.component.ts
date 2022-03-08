@@ -8,6 +8,7 @@ import {
   OnDestroy,
   OnInit,
   QueryList,
+  Renderer2,
   ViewChildren,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -56,6 +57,11 @@ export class NgNumberInputComponent
   text_!: any;
   blur = true;
   subscription = new Subscription();
+  correction:any;
+  preserveDecimals;
+  minfractions;
+  minIntegers;
+  currentKey;
   get value(): any {
     if (this.useString) {
       return this.innerValue;
@@ -105,7 +111,7 @@ export class NgNumberInputComponent
     this.disabled = isDisabled;
   }
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef, private _renderer: Renderer2) {}
 
   ngOnDestroy() {
     {
@@ -128,7 +134,11 @@ export class NgNumberInputComponent
     if (this.useString || !this.locale?.length) {
       this.locale = ['en-US'];
     }
+    
     this.initLocaleAndLimit();
+    /* if(this.locale[1].minimumFractionDigits||(this.locale[1].style &&this.locale[1].style=='currency')){
+      this.preserveDecimals = true;
+    } */
     let seperators = {
       ...this.calculateSeperators(
         this.live == false ? 'en-US' : this.locale[0]
@@ -136,6 +146,8 @@ export class NgNumberInputComponent
     };
     this.thousandsSeperator = seperators.thousandsSeperator;
     this.fractionSeperator = seperators.fractionSeperator;
+
+    
   }
 
   setLocaleOptions(option, value) {
@@ -150,11 +162,17 @@ export class NgNumberInputComponent
     let fractionSeperator;
     let formattedText: any = new Intl.NumberFormat(locale).format(1234567.89);
     formattedText = formattedText.replace(/[\d]/g, '');
-    if (this.live) {
+    if (this.live ) {
       this.regex = new RegExp(`[^\\d${formattedText[2]}\\-]`, 'g');
     }
     thousandsSeperator = formattedText[0];
     fractionSeperator = formattedText[2];
+    if(this.live){
+      let formattedText: any = new Intl.NumberFormat(this.locale[0],this.locale[1]).format(0)?.replace(this.regex,'');
+      this.minIntegers = formattedText?.split('.')[0]?.length
+      this.minfractions = formattedText?.split('.')[1]?.length
+
+    }
     return { thousandsSeperator, fractionSeperator };
   }
 
@@ -176,21 +194,47 @@ export class NgNumberInputComponent
     }
   }
   setText(t: any) {
+    let initPos;
     let pos;
     let diff = 0;
     if (this.target) {
       pos = this.target.selectionStart;
+      initPos = pos;
     }
+
+    console.log(this.value)
+    console.log(pos)
     if (t !== this.text) {
       diff = t?.split(this.regex).length - this.text?.split(this.regex).length;
+      diff = diff 
       this.text_ = new String(t);
-      if (diff < 0 || diff > 0) {
-        pos += diff;
+      if (diff < 0 || diff > 0 ) {
+        pos += diff ;
+      }
+    }
+    if(this.live && !this.useString && this.minIntegers && (!this.value||this.correction||
+      (initPos == (t.indexOf(this.fractionSeperator)+1) &&
+       this.value?.toString()?.split(this.fractionSeperator)[0]?.length<=this.minIntegers)&&
+       this.currentKey !== this.fractionSeperator
+      )){
+      if(this.correction){
+        this.correction = false;
+      }
+      pos = t.length
+      if(t.includes(this.fractionSeperator)){
+        pos = t.indexOf(this.fractionSeperator)
+      }else{
+        pos = t.length
       }
     }
     if (pos) {
       setTimeout(() => {
+        if(this.live&&!this.useString){
+          let formatted = new Intl.NumberFormat(this.locale[0],this.locale[1]).format(0)
+            formatted = formatted.replace(this.regex,'');
+        }
         this.target.setSelectionRange(pos, pos);
+
       });
     }
   }
@@ -219,7 +263,13 @@ export class NgNumberInputComponent
     return m;
   }
   onKeyDown(event) {
+    if(event.key){
+      this.currentKey = event.key
+    }
     if (this.target) {
+      if(this.target?.selectionStart!=this.target?.selectionEnd){
+        this.correction = true;
+      }
       return;
     }
     this.target = event.target;
@@ -284,15 +334,17 @@ export class NgNumberInputComponent
     return this.useString ? useStringText : number;
   }
   processInput(value: string) {
+    
     if (!value) {
-      this.value = null;
-      this.onChange(null);
       this.setText(this.format ? this.format('') : '');
       if (!this.live) {
         this.test = new String('');
       }
+      this.value = null;
+      this.onChange(null);
       return;
     }
+   
     let text = this.sanitize(value);
     if (this.useString) {
       return this.processStringInput(text);
@@ -305,17 +357,20 @@ export class NgNumberInputComponent
       }
       number = this.checkBoundaries(number);
       let localeOptions = this.locale[1];
-      if (text.includes(this.fractionSeperator)) {
-        localeOptions = localeOptions
-          ? { ...localeOptions, minimumFractionDigits: 1 }
-          : { minimumFractionDigits: 1 };
+
+      if (text.includes(this.fractionSeperator) && !this.minfractions) {
+          localeOptions = localeOptions
+            ? { ...localeOptions, minimumFractionDigits: 1 }
+            : { minimumFractionDigits: 1 };
+        
       }
+      
       let temp = number.toLocaleString(this.locale[0], localeOptions);
-      this.value = number;
       if (this.format) {
         temp = this.format(temp);
       }
       this.setText(temp);
+      this.value = number;
       this.onChange(this.value);
 
       if (!this.live) {
@@ -338,11 +393,12 @@ export class NgNumberInputComponent
       text = this.format(text);
     }
     this.setText(text);
-    this.value = null;
-    this.onChange(this.value);
     if (!this.live) {
       this.test = new String(text);
     }
+    this.value = null;
+    this.onChange(this.value);
+    
   }
   processStringInput(text) {
     if (this.parseInt) {
@@ -358,12 +414,11 @@ export class NgNumberInputComponent
         text?.split(this.fractionSeperator)[1].substring(0, limit),
       ].join(this.fractionSeperator);
     }
-    this.value = text;
-
     if (this.format) {
       text = this.format(text);
     }
     this.setText(text);
+    this.value = text;
     this.onChange(this.value);
     return;
   }
