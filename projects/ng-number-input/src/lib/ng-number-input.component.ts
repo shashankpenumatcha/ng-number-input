@@ -19,12 +19,12 @@ import { Subscription } from 'rxjs';
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => NumberInputComponent),
+      useExisting: forwardRef(() => NgNumberInputComponent),
       multi: true,
     },
   ],
 })
-export class NumberInputComponent
+export class NgNumberInputComponent
   implements ControlValueAccessor, OnInit, AfterViewInit, OnDestroy
 {
   @ViewChildren('numberInput') numberInput: QueryList<ElementRef>;
