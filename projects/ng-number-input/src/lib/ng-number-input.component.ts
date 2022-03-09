@@ -195,7 +195,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     let pos;
     let diff = 0;
     if (this.target) {
-      pos = this.target.selectionStart;
+      pos = this.target?.selectionStart;
       initPos = pos;
     }
     this.hideCaret = true;
@@ -240,7 +240,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
           this.stepsToCancel = 0;
         }
         pos -= this.stepsToCancel;
-        if (this.useString && this.format && (this.previousCursorPosition || this.previousCursorPosition == 0)) {
+        if (this.useString &&  this.format &&(this.previousCursorPosition || this.previousCursorPosition == 0)) {
           const charBeingEdited = this.previousText[this.previousCursorPosition - 1];
           if (
             !charBeingEdited ||
@@ -253,7 +253,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
             pos = this.text.length;
           }
         }
-        this.target.setSelectionRange(pos, pos, 'none');
+        this.target?.setSelectionRange(pos, pos, 'none');
         this.hideCaret = false;
       });
     }else{
@@ -268,7 +268,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     let m = Number(sanitizedText);
     if (m > Number.MAX_SAFE_INTEGER || m < -Number.MAX_SAFE_INTEGER) {
       if (this.live) {
-        return Number(this.sanitize(this.text_));
+        return Number(this.sanitize(this.text_).replace(this.fractionSeperator, '.'));
       } else {
         let seperators = this.calculateSeperators(this.locale[0]);
         let temp = this.text_?.replace(new RegExp(`[^\\d${seperators.fractionSeperator}\\-]`, 'g'), '');
@@ -288,7 +288,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
       if (this.target?.selectionStart != this.target?.selectionEnd) {
         this.correction = true;
       } else {
-        this.previousCursorPosition = this.target.selectionStart;
+        this.previousCursorPosition = this.target?.selectionStart;
       }
       return;
     }
