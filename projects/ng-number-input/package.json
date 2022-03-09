@@ -1,7 +1,7 @@
 {
   "name": "ng-number-input",
   "author": "Shashank Penumatcha",
-  "version": "0.0.36",
+  "version": "0.0.37",
   "peerDependencies": {
     "@angular/common": "^12.1.0",
     "@angular/core": "^12.1.0"
