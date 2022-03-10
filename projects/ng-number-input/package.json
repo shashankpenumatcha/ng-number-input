@@ -1,7 +1,7 @@
 {
   "name": "ng-number-input",
   "author": "Shashank Penumatcha",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "peerDependencies": {
     "@angular/common": "^12.1.0",
     "@angular/core": "^12.1.0"
@@ -9,5 +9,14 @@
   "dependencies": {
     "tslib": "^2.2.0"
   },
-  "keywords": ["angular","input","comma","locale","number"]
+  "keywords": [
+    "angular",
+    "input",
+    "comma",
+    "locale",
+    "number"
+  ],
+  "devDependencies": {
+    "typescript": "^4.1.2"
+  }
 }

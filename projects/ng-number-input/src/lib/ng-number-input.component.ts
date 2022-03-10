@@ -3,6 +3,7 @@
 import { AfterViewInit, Component, ElementRef, forwardRef, Input, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { NgNumberInputService } from './ng-number-input.service';
 
 @Component({
   selector: 'ng-number-input',
@@ -77,7 +78,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     }
   }
 
-  constructor(private elementRef: ElementRef) {}
+  constructor(private elementRef: ElementRef, private service: NgNumberInputService) {}
 
   onChange(event): any {}
   onTouch(event): any {}
@@ -108,13 +109,30 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
 
   ngAfterViewInit(): void {
     this.subscription.add(
-      this.numberInput.changes.subscribe(c => {
+      this.numberInput?.changes?.subscribe(c => {
         this.numberInput?.first?.nativeElement?.focus();
       })
     );
   }
 
   ngOnInit(): void {
+    this.setCustomStyle();
+    if (!this.live) {
+      this.useString = false;
+    }
+    this.initLocaleAndLimit();
+    let seperators = {
+      ...this.service.getLocaleSeperators(this.live == false ? 'en-US' : this.locale[0], this.live,this.locale)
+    };
+    this.thousandsSeperator = seperators.group;
+    this.fractionSeperator = seperators.decimal;
+    this.minIntegers = seperators.minIntegers;
+    this.minfractions = seperators.minfractions;
+    this.regex = seperators.regex;
+    this.test = this.value;
+  }
+
+  setCustomStyle(){
     if(this.customStyle){
       this.customStyle ={
         height: '100%',
@@ -124,26 +142,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
         padding: '0px',
         ...this.customStyle
       };
-      
-      
     }
-    this.test = this.value;
-    if (!this.live) {
-      this.useString = false;
-    }
-    if (this.useString || !this.locale?.length) {
-      this.locale = ['en-US'];
-    }
-
-    this.initLocaleAndLimit();
-    /* if(this.locale[1].minimumFractionDigits||(this.locale[1].style &&this.locale[1].style=='currency')){
-      this.preserveDecimals = true;
-    } */
-    let seperators = {
-      ...this.calculateSeperators(this.live == false ? 'en-US' : this.locale[0])
-    };
-    this.thousandsSeperator = seperators.thousandsSeperator;
-    this.fractionSeperator = seperators.fractionSeperator;
   }
 
   setLocaleOptions(option, value) {
@@ -153,25 +152,10 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     this.locale[1][option] = value;
   }
 
-  calculateSeperators(locale?) {
-    let thousandsSeperator;
-    let fractionSeperator;
-    let formattedText: any = new Intl.NumberFormat(locale).format(1234567.89);
-    formattedText = formattedText.replace(/[\d]/g, '');
-    if (this.live) {
-      this.regex = new RegExp(`[^\\d${formattedText[2]}\\-]`, 'g');
-    }
-    thousandsSeperator = formattedText[0];
-    fractionSeperator = formattedText[2];
-    if (this.live) {
-      let formattedText: any = new Intl.NumberFormat(this.locale[0], this.locale[1]).format(0)?.replace(this.regex, '');
-      this.minIntegers = formattedText?.split('.')[0]?.length;
-      this.minfractions = formattedText?.split('.')[1]?.length;
-    }
-    return { thousandsSeperator, fractionSeperator };
-  }
-
   initLocaleAndLimit() {
+    if (this.useString || !this.locale?.length) {
+      this.locale = ['en-US'];
+    }
     if (!this.useString) {
       if(this.locale&&this.locale[1]&&this.locale[1].maximumFractionDigits&&!this.limitTo){
         this.limitTo = this.locale[1].maximumFractionDigits;
@@ -189,6 +173,81 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
         this.limitTo = Number.POSITIVE_INFINITY;
       }
     }
+  }
+
+  processInput(stringToProcess: string) {
+    this.stepsToCancel = 0;
+    if (!stringToProcess) {
+      this.setText(this.format ? this.format('') : '');
+      if (!this.live) {
+        this.test = new String('');
+      }
+      this.value = null;
+      this.onChange(null);
+      return;
+    }
+    // start processing string
+    let sanitizedString = this.sanitize(stringToProcess);
+    let previousSanitizedString = this.sanitize(this.text);
+    let diff = 0;
+    if(this.live && sanitizedString == previousSanitizedString ){
+      if (this.currentKey != this.fractionSeperator && !this.correction) {
+        this.stepsToCancel = 1;
+      }else if (this.currentKey == this.fractionSeperator && stringToProcess?.length > this.text?.length) {
+          this.stepsToCancel = diff;
+      }
+    }
+    if (this.useString) {
+      return this.processStringInput(sanitizedString);
+    }
+    //end processing string
+
+    let number = this.limiter(sanitizedString);
+    if(!sanitizedString || (!number&&number!==0)){
+      if (this.format) {
+        sanitizedString = this.format(sanitizedString);
+      }
+      this.setText(sanitizedString);
+      if (!this.live) {
+        this.test = new String(sanitizedString);
+      }
+      this.value = null;
+      this.onChange(this.value);
+      return
+    }
+    if (this.parseInt) {
+      number = parseInt(sanitizedString);
+    }
+    number = this.checkBoundaries(number);
+    let localeOptions = this.locale[1];
+
+    //preserve fraction seperator while user is typing. for '2.' the decimal is stripped during type conversion
+    if (sanitizedString.includes(this.fractionSeperator) && !this.minfractions && !this.parseInt) {
+      localeOptions = localeOptions ? { ...localeOptions, minimumFractionDigits: 1 } : { minimumFractionDigits: 1 };
+    }
+    let processedString = number.toLocaleString(this.locale[0], localeOptions);
+    if (this.format) {
+      processedString = this.format(processedString);
+    }
+    this.setText(processedString);
+    this.value = number;
+    this.onChange(this.value);
+    
+    //need to limit the decimals of unformatted number manullay in !live mode. 
+    if (!this.live) {
+      let right = sanitizedString.split(this.fractionSeperator)[1];
+      if (right?.length > this.limitTo) {
+        right = right?.substring(0, this.limitTo);
+      }
+      let temp = this.value?.toString();
+      if (sanitizedString.includes(this.fractionSeperator)) {
+        temp = [this.value?.toString()?.split(this.fractionSeperator)[0], right].join(this.fractionSeperator);
+      }
+      this.test = new String(temp);
+    }
+    return;
+    
+   
   }
   setText(t: any) {
     let initPos;
@@ -270,9 +329,9 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
       if (this.live) {
         return Number(this.sanitize(this.text_).replace(this.fractionSeperator, '.'));
       } else {
-        let seperators = this.calculateSeperators(this.locale[0]);
-        let temp = this.text_?.replace(new RegExp(`[^\\d${seperators.fractionSeperator}\\-]`, 'g'), '');
-        temp = temp.replace(seperators.fractionSeperator, '.');
+        let seperators = this.service.getLocaleSeperators(this.locale[0],this.live,this.locale);
+        let temp = this.text_?.replace(new RegExp(`[^\\d${seperators.group}\\-]`, 'g'), '');
+        temp = temp.replace(seperators.decimal, '.');
         return Number(temp);
       }
     }
@@ -315,12 +374,13 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     }
     return text;
   }
-  sanitize(value: string) {
+  sanitize(value: string): string{
     let text: any = `${value}`.replace(this.regex, '');
     text = this.processDecimals(text);
     return this.processNegatives(text);
   }
-  checkBoundaries(number) {
+
+  checkBoundaries(number: number): any {
     let useStringText;
     let value = this.value;
     if (this.useString) {
@@ -353,79 +413,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
 
     return this.useString ? useStringText : number;
   }
-  processInput(value: string) {
-    this.stepsToCancel = 0;
-    if (!value) {
-      this.setText(this.format ? this.format('') : '');
-      if (!this.live) {
-        this.test = new String('');
-      }
-      this.value = null;
-      this.onChange(null);
-      return;
-    }
 
-    let text = this.sanitize(value);
-    let previousText = this.sanitize(this.text);
-    let diff = 0;
-
-    if (this.minIntegers && text == previousText && this.currentKey != this.fractionSeperator) {
-      this.stepsToCancel = 1;
-    }
-
-    if (this.minIntegers && text == previousText && this.currentKey == this.fractionSeperator) {
-      diff = value.length - this.text.length;
-      if (diff && diff > 0) {
-        this.stepsToCancel = diff;
-      }
-    }
-    if (this.useString) {
-      return this.processStringInput(text);
-    }
-    let number = this.limiter(text);
-    if (text && (number || number === 0)) {
-      if (this.parseInt) {
-        // eslint-disable-next-line radix
-        number = parseInt(text);
-      }
-      number = this.checkBoundaries(number);
-      let localeOptions = this.locale[1];
-
-      if (text.includes(this.fractionSeperator) && !this.minfractions && !this.parseInt) {
-        localeOptions = localeOptions ? { ...localeOptions, minimumFractionDigits: 1 } : { minimumFractionDigits: 1 };
-      }
-
-      let temp = number.toLocaleString(this.locale[0], localeOptions);
-      if (this.format) {
-        temp = this.format(temp);
-      }
-      this.setText(temp);
-      this.value = number;
-      this.onChange(this.value);
-
-      if (!this.live) {
-        let right = text.split(this.fractionSeperator)[1];
-        if (right?.length > this.limitTo) {
-          right = right?.substring(0, this.limitTo);
-        }
-        let temp = this.value?.toString();
-        if (text.includes(this.fractionSeperator)) {
-          temp = [this.value?.toString()?.split(this.fractionSeperator)[0], right].join(this.fractionSeperator);
-        }
-        this.test = new String(temp);
-      }
-      return;
-    }
-    if (this.format) {
-      text = this.format(text);
-    }
-    this.setText(text);
-    if (!this.live) {
-      this.test = new String(text);
-    }
-    this.value = null;
-    this.onChange(this.value);
-  }
   processStringInput(text) {
     if (this.parseInt) {
       text = text?.split(this.fractionSeperator)[0];
