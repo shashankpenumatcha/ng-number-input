@@ -3,7 +3,6 @@
 import { AfterViewInit, Component, ElementRef, forwardRef, Input, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { NgNumberInputService } from './ng-number-input.service';
 
 @Component({
   selector: 'ng-number-input',
@@ -20,6 +19,7 @@ import { NgNumberInputService } from './ng-number-input.service';
 export class NgNumberInputComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnDestroy {
   @ViewChildren('numberInput') numberInput: QueryList<ElementRef>;
   test: any;
+  @Input() mode = 'default'; //['default', 'string', 'lazy']
   @Input() max = Number.MAX_SAFE_INTEGER;
   @Input() min = -Number.MAX_SAFE_INTEGER;
   @Input() locale: any = ['en-US'];
@@ -29,8 +29,8 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
   @Input() parseInt = false;
   @Input() limitTo;
   @Input() format!: any;
-  @Input() useString = false;
-  @Input() live = true;
+  useString = false;
+  live = true;
   fractionSeperator = '.';
   thousandsSeperator = ',';
   regex = /[^\d.\-]/g;
@@ -42,12 +42,12 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
   blur = true;
   subscription = new Subscription();
   correction: any;
-  preserveDecimals;
   minfractions;
   minIntegers;
   currentKey;
-  stepsToCancel = 0;
   previousCursorPosition;
+  currentCursorPosition;
+  groupsDelta=0;
   hideCaret = false;
   previousText;
   get value(): any {
@@ -78,7 +78,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     }
   }
 
-  constructor(private elementRef: ElementRef, private service: NgNumberInputService) {}
+  constructor(private elementRef: ElementRef) {}
 
   onChange(event): any {}
   onTouch(event): any {}
@@ -115,14 +115,36 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     );
   }
 
+  setMode(){
+    if(!this.mode || typeof(this.mode)!='string'){
+      this.mode = 'default'
+    }
+    if(this.mode=='string'){
+      this.live = true
+      this.useString = true;
+    }
+    if(this.mode=='lazy'){
+      this.live = false;
+      this.useString = false;
+    }
+    if(this.mode=='default'){
+      this.live=true;
+    }
+  }
+
+  seLocaleOptions(){
+
+  }
+
   ngOnInit(): void {
+    this.setMode();
     this.setCustomStyle();
     if (!this.live) {
       this.useString = false;
     }
     this.initLocaleAndLimit();
     let seperators = {
-      ...this.service.getLocaleSeperators(this.live == false ? 'en-US' : this.locale[0], this.live,this.locale)
+      ...this.getLocaleSeperators(this.live == false ? 'en-US' : this.locale[0], this.live,this.locale)
     };
     this.thousandsSeperator = seperators.group;
     this.fractionSeperator = seperators.decimal;
@@ -157,6 +179,9 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
       this.locale = ['en-US'];
     }
     if (!this.useString) {
+      if(!this.locale[1]){
+        this.locale[1]={}
+      }
       if(this.locale&&this.locale[1]&&this.locale[1].maximumFractionDigits&&!this.limitTo){
         this.limitTo = this.locale[1].maximumFractionDigits;
         
@@ -176,7 +201,6 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
   }
 
   processInput(stringToProcess: string) {
-    this.stepsToCancel = 0;
     if (!stringToProcess) {
       this.setText(this.format ? this.format('') : '');
       if (!this.live) {
@@ -187,16 +211,8 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
       return;
     }
     // start processing string
-    let sanitizedString = this.sanitize(stringToProcess);
-    let previousSanitizedString = this.sanitize(this.text);
-    let diff = 0;
-    if(this.live && sanitizedString == previousSanitizedString ){
-      if (this.currentKey != this.fractionSeperator && !this.correction) {
-        this.stepsToCancel = 1;
-      }else if (this.currentKey == this.fractionSeperator && stringToProcess?.length > this.text?.length) {
-          this.stepsToCancel = diff;
-      }
-    }
+    let sanitizedString = this.sanitize(stringToProcess);    
+    this.groupsDelta = this.trackGroups(stringToProcess,this.text)?.delta;
     if (this.useString) {
       return this.processStringInput(sanitizedString);
     }
@@ -246,71 +262,97 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
       this.test = new String(temp);
     }
     return;
-    
-   
   }
-  setText(t: any) {
+  trackGroups(currentText, previousText){
+    const regex =  new RegExp(`[^\\${this.thousandsSeperator}]`, 'g');
+    const countIncurrentText = currentText?.replace(regex,'')?.length ?? 0;
+    const countInpreviousText = previousText?.replace(regex,'')?.length ?? 0;
+    return {delta : countIncurrentText-countInpreviousText}
+  }
+  correctCaretForFormat(correctedPostion, minIntegerCorrection){
+    if(!this.format){
+      return correctedPostion
+    }
+    if(!this.value || !this.previousText || this.previousCursorPosition<=this.previousText?.search(/\d/)){
+        if(!this.value&&this.minIntegers&&this.text.includes(this.fractionSeperator)){
+          return this.text.indexOf(this.fractionSeperator)
+        }
+        return this.text.search(/\d/)+1
+    }
+    return correctedPostion
+  }
+  correctCaretForMinIntegers(correctedPostion){
+    let minIntegerCorrection = false;
+
+    if(!this.minIntegers || this.minIntegers<2||!this.live||this.useString){
+      return {minIntegerCorrection,pos:correctedPostion}
+    }
+    const fractionSeperator = this.text.indexOf(this.fractionSeperator);
+    if(this.correction){
+      if(fractionSeperator>=0){
+        correctedPostion = this.text.indexOf(this.fractionSeperator)
+      }else{
+        correctedPostion = this.text.length;
+      }
+      return {minIntegerCorrection,pos:correctedPostion};
+    }
+    if(this.previousCursorPosition==0){
+      if(fractionSeperator&&!this.value){
+        correctedPostion = fractionSeperator
+        return {minIntegerCorrection,pos:correctedPostion}
+      }
+    }
+    let previousFractionSeperator = this.previousText?.indexOf(this.fractionSeperator);
+    if(previousFractionSeperator>=0 && this.previousCursorPosition <= previousFractionSeperator){
+      const valueLeft =this.value?.toString()?.split(this.fractionSeperator)[0];
+      const textLeft = this.previousText.split(this.fractionSeperator)[0]?.replace(/[^\d]/g,'');
+      if(valueLeft?.length < textLeft?.length){
+        minIntegerCorrection = true;
+      }
+      if(valueLeft?.length < textLeft?.length&&this.currentKey !== this.fractionSeperator){
+        correctedPostion = this.previousCursorPosition;
+      }
+      if(this.currentKey == this.fractionSeperator){
+        return{minIntegerCorrection, pos: fractionSeperator+1}
+      }
+    }
+    
+    return {minIntegerCorrection , pos:correctedPostion}
+  }
+  setText(textToRender: any) {
     let initPos;
     let pos;
     let diff = 0;
-    if (this.target) {
-      pos = this.target?.selectionStart;
-      initPos = pos;
-    }
+    pos = this.target?.selectionStart ?? 0;
+    initPos = pos;
     this.hideCaret = true;
-
-    if (t !== this.text) {
-      diff = t?.split(this.regex).length - this.text?.split(this.regex).length;
+    if (textToRender !== this.text) {
+      diff = textToRender?.split(this.regex).length - this.text?.split(this.regex).length;
       this.previousText = this.text_;
-      this.text_ = new String(t);
-      if (diff < 0 || diff > 0) {
+      this.text_ = new String(textToRender);
+      if (diff) {
         pos += diff;
+      }else if(this.groupsDelta>0){
+        //user did not erase a group seperator so allow the natrual flow of caret
+        pos = this.previousCursorPosition;
       }
-    }
+      if(this.correction){
+        pos = this.text.length; 
+      }
+      let minIntResponse = this.correctCaretForMinIntegers(pos);
+      let minIntegerCorrection = minIntResponse?.minIntegerCorrection ? true:  false;
+      pos = minIntResponse.pos;
+      pos = this.correctCaretForFormat(pos,minIntegerCorrection);
 
-    if (
-      this.live &&
-      !this.useString &&
-      this.minIntegers &&
-      this.minfractions &&
-      (!this.value ||
-        this.correction ||
-        (initPos == t.indexOf(this.fractionSeperator) + 1 &&
-          this.value?.toString()?.split(this.fractionSeperator)[0]?.length <= this.minIntegers &&
-          this.currentKey !== this.fractionSeperator))
-    ) {
-      if (this.correction) {
-        this.correction = false;
-      }
-      pos = t.length;
-      if (t.includes(this.fractionSeperator)) {
-        pos = t.indexOf(this.fractionSeperator);
-      } else {
-        pos = t.length;
-      }
     }
-    if (pos) {
+    if (pos||pos==0) {
       setTimeout(() => {
-        if (this.live && !this.useString) {
-          let formatted = new Intl.NumberFormat(this.locale[0], this.locale[1]).format(0);
-          formatted = formatted.replace(this.regex, '');
+        if(this.correction){
+          this.correction= false;
         }
-        if (this.currentKey == this.fractionSeperator) {
-          this.stepsToCancel = 0;
-        }
-        pos -= this.stepsToCancel;
-        if (this.useString &&  this.format &&(this.previousCursorPosition || this.previousCursorPosition == 0)) {
-          const charBeingEdited = this.previousText[this.previousCursorPosition - 1];
-          if (
-            !charBeingEdited ||
-            (this.previousText &&
-              isNaN(Number(charBeingEdited)) &&
-              charBeingEdited != this.fractionSeperator &&
-              charBeingEdited != this.thousandsSeperator &&
-              charBeingEdited != '-')
-          ) {
-            pos = this.text.length;
-          }
+        this.currentCursorPosition = pos;
+        if(pos<0){
+          pos=0
         }
         this.target?.setSelectionRange(pos, pos, 'none');
         this.hideCaret = false;
@@ -329,13 +371,24 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
       if (this.live) {
         return Number(this.sanitize(this.text_).replace(this.fractionSeperator, '.'));
       } else {
-        let seperators = this.service.getLocaleSeperators(this.locale[0],this.live,this.locale);
+        let seperators = this.getLocaleSeperators(this.locale[0],this.live,this.locale);
         let temp = this.text_?.replace(new RegExp(`[^\\d${seperators.group}\\-]`, 'g'), '');
         temp = temp.replace(seperators.decimal, '.');
         return Number(temp);
       }
     }
     return m;
+  }
+
+  checkForSelection($event){
+    if (this.target) {
+      // mark for correction if text is selected
+      if (this.target?.selectionStart !== this.target?.selectionEnd) {
+        this.correction = true;
+      }
+      return;
+    }
+    this.target = $event.target;
   }
   onKeyDown(event) {
     this.hideCaret = false;
@@ -344,14 +397,12 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     }
     if (this.target) {
       // mark for correction if text is selected
-      if (this.target?.selectionStart != this.target?.selectionEnd) {
-        this.correction = true;
-      } else {
+      if (this.target?.selectionStart == this.target?.selectionEnd) {
         this.previousCursorPosition = this.target?.selectionStart;
       }
       return;
     }
-    this.target = event.target;
+    this.checkForSelection(event)
   }
   processDecimals(text: string) {
     const hasPeriod = text.includes(this.fractionSeperator);
@@ -427,7 +478,6 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
         this.fractionSeperator
       );
     }
-
     let stringValue = text.replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ',');
     if (this.format) {
       text = this.format(text);
@@ -436,5 +486,26 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     this.value = stringValue;
     this.onChange(this.value);
     return;
+  }
+  getLocaleSeperators(locale?, live?: boolean, localeFromInput?) {
+    const {group, decimal}: any = new Intl.NumberFormat(locale).formatToParts(1234567.89).reduce((acc,r)=>{
+      if(r.type == 'group'||r.type == 'decimal'){
+        acc[r.type]  = r.value
+      }
+      return acc;
+    },{});
+    const regex = new RegExp(`[^\\d${decimal}\\-]`, 'g');
+    if (live) {
+      const {integer, fraction}: any = new Intl.NumberFormat(...localeFromInput).formatToParts(0).reduce((acc,r)=>{
+        if(r.type == 'integer'||r.type == 'fraction'){
+          acc[r.type]  = r.value
+        }
+        return acc;
+      },{});
+      const minIntegers = integer?.length;
+      const minfractions = fraction?.length;
+      return { group, decimal,minIntegers, minfractions, regex};
+    }
+    return { group, decimal,regex};
   }
 }

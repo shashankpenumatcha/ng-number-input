@@ -1,7 +1,13 @@
 {
   "name": "ng-number-input",
   "author": "Shashank Penumatcha",
-  "version": "0.0.40",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shashankpenumatcha/ng-number-input"
+  },"bugs":{
+    "url": "https://github.com/shashankpenumatcha/ng-number-input/issues"
+  },
   "peerDependencies": {
     "@angular/common": "^12.1.0",
     "@angular/core": "^12.1.0"
@@ -14,9 +20,14 @@
     "input",
     "comma",
     "locale",
-    "number"
+    "number",
+    "mask",
+    "ng",
+    "format",
+    "currency"
   ],
   "devDependencies": {
     "typescript": "^4.1.2"
   }
+
 }

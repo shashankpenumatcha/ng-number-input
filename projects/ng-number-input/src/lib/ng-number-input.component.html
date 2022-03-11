@@ -1,9 +1,8 @@
-<input (focusin)="hideCaret=false" (click)="hideCaret=false" [ngClass]="{'hide-caret':hideCaret}" *ngIf="live" (paste)="onKeyDown($event)" (keydown)="onKeyDown($event)" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="text"  (blur)="onTouch($event)">
 
+<input  (keyup)="checkForSelection($event)" (mouseup)="checkForSelection($event)" (focusin)="hideCaret=false" (click)="hideCaret=false" [ngClass]="{'hide-caret':hideCaret}" *ngIf="live" (paste)="onKeyDown($event)" (keydown)="onKeyDown($event)" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="text"  (blur)="onTouch($event)">
 
 <ng-container *ngIf="!live">
     <input #numberInput  *ngIf="!blur" (focus)="blur=false" (focusout)="blur=true" [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [(ngModel)]="test" (ngModelChange)="processInput(test)" (blur)="onTouch($event)">
     <input #stringInput  *ngIf="blur" (click)="$event.preventDefault;blur = false" (focus)="blur=false" (focusout)="blur=false"   [disabled]="disabled" class="number-input-element"  [style]="customStyle" [placeholder]="placeholder" [name]="name" autocomplete="off" type="text" [value]="text" (blur)="onTouch($event)">
 </ng-container>
-
 

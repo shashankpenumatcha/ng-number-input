@@ -9,7 +9,7 @@
     Built using ControlValueAccessor to support Angular forms API.
     
 ## Demo
-Play around with the API on [StackBlitz](https://stackblitz.com/edit/angular-ivy-kqpxgd?devtoolsheight=33&file=src/app/app.component.html)
+Play around with the API on [StackBlitz](https://stackblitz.com/edit/angular-ivy-kqpxgd?file=src/app/app.component.html)
 
 
 ## Usage Instructions
