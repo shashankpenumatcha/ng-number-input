@@ -7,7 +7,9 @@ Built on top of `HTML text input`  using `ControlValueAccessor` to support Angul
 
 Formatting is mostly done using the `Intl.NumberFormat`.
 
+
 ## Demo
+![enter image description here](https://github.com/shashankpenumatcha/ng-number-input/blob/main/gif.gif?raw=true)
 
 Play around with the API on [StackBlitz](https://stackblitz.com/edit/angular-ivy-kqpxgd?file=src/app/app.component.html).
 
@@ -245,6 +247,7 @@ Play around with the API on [StackBlitz](https://stackblitz.com/edit/angular-ivy
   
   
 
-> This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 12.1.0.
+## Source Code
 
+> This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 12.1.0.
   

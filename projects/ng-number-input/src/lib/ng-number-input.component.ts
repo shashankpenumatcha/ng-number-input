@@ -190,7 +190,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
         this.limitTo = 3;
       }
       
-      if(this.limitTo){
+      if(this.limitTo && this.locale[1].maximumFractionDigits){
         this.setLocaleOptions('maximumFractionDigits', this.limitTo);
       }
     } else {
@@ -241,7 +241,7 @@ export class NgNumberInputComponent implements ControlValueAccessor, OnInit, Aft
     if (sanitizedString.includes(this.fractionSeperator) && !this.minfractions && !this.parseInt) {
       localeOptions = localeOptions ? { ...localeOptions, minimumFractionDigits: 1 } : { minimumFractionDigits: 1 };
     }
-    let processedString = number.toLocaleString(this.locale[0], localeOptions);
+    let processedString = Intl.NumberFormat(this.locale[0], localeOptions).format(number);
     if (this.format) {
       processedString = this.format(processedString);
     }
