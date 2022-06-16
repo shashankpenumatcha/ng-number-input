@@ -5,7 +5,7 @@ Angualr form input that adds group and fraction separators to numbers as you typ
 
 Built on top of `HTML text input`  using `ControlValueAccessor` to support Angular forms API.
 
-Formatting is mostly done using the `Intl.NumberFormat`.
+Formatting is mostly done using `Intl.NumberFormat`.
 
 
 ## Demo
